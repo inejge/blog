@@ -36,7 +36,7 @@ It must be unsafe, since messing with the raw bytes of a `String` can break the 
 
 It is also completely unnecessary.
 
-The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. 
+The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a gentle remonstrance by the `rustup` maintainer, and thinking about the tradeoffs more thoroughly, 
 
 
 

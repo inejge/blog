@@ -1,0 +1,48 @@
+= The Temptation of Unsafe
+:hp-tags: Rust, unsafe
+
+Undefined behavior (UB) is _never_ OK. Having it anywhere means that the program is essentially unpredictable. (Yes, it may work today, with the specific combination of your CPU, OS, compiler version, library versions, and set of inputs. Change any of those and it may stop working. Tomorrow. Next week. Six months hence. Perhaps never--but you don't know that. "Stop working" includes crashing, corrupting data, or letting an attacker exfiltrate your whole user database. You don't know that either.)
+
+People occasionally confuse or conflate UB with "unsafe", as used in Rust.
+The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust's expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.
+
+In the source code, unsafe can appear in three ways.
+
+An unsafe block means "I (the author of the block) vouch for the semantics of the code inside the block". "Semantics" are the union of avoiding UB and upholding the program's and Rust's invariants. This is trickier than it seems: the scope of unsafety is not limited to the block in which unsafe operations appear, but stretches at least to the enclosing module boundary.
+
+An unsafe function means "You (the caller of the function) must guarantee the semantics of the code calling the function".
+
+An unsafe trait implementation means "I (the implementor of the trait) guarantee that the trait's semantics are followed in the code".
+
+One goal of safe Rust is to make UB impermissible. An unsafe block which contains UB and/or makes it possible to introduce UB in safe code is about the worst imaginable violation of Rust's safety guarantees, because the potential for unsoundness is hidden behind a safe façade. An unsafe function or trait implementation with UB are not any better, but at least the "unsafe" keyword prompts the user to be vigilant.
+
+A sub-category of "expressive power unsafe" is code where safety is sidestepped to achieve better performance. This is legitimate _if supported by evidence_ of meaningful performance improvement (strictly IMO). Since benchmarking is difficult and not everyone's criteria for adequate performance are in alignment, this is the most contentious use of unsafe. Rust is attractive to programmers who reflexively seek to eliminate percieved inefficiencies, and the temptation of unsafe always beckons.
+
+As a lifelong C programmer, I'll admit to succumbing now and then.
+
+I have a demonstration, too. A crate of mine, `env_proxy`, extracts the proxy server parameters from the environment variables, and is used in `rustup`, exposing it to all kinds of unconventional setups and unearthing an occasional edge case or bug. A https://github.com/inejge/env_proxy/issues/6[recent issue] arose as a result of having an HTTP proxy on port 80: since that's the default HTTP port, the URL parser would remove it when explicitly specified, setting it to `None` in the `Url` struct, but `env_proxy` would treat its absence as a sign of not having been specified at all, and set the port to _its_ default, 8080. Effectively, setting `http://proxy.example.com:80` would give you back `http://proxy.example.com:8080`.
+
+The proper way to fix this is to tell the URL parser to use a different default port, not currently possible in `url`. As a workaround, I chose to replace the `http` or `https` scheme with the bogus `xttp`/`xttps`, which doesn't have a default port, so anything specified is retained by the parser.
+
+Now, look at it as a C programmer. You probably have the URL in a string (`char *`), call it `s`. Changing the scheme is just changing the first character of the string.
+
+image::https://user-images.githubusercontent.com/1049870/61454768-1a9e9380-a962-11e9-881c-cadecc851c72.png[]
+
+What about Rust? If the URL is in a `String` (also named `s`), you can't change it easily in the same way. A `String` can't be indexed, for good reasons. Rebuilding the string requires an unnecessary allocation. So inefficient! Then there's the https://github.com/inejge/env_proxy/commit/33399e1ba23f4f27c2b5aa46c3222f995cb70a46[unsafe way]...
+
+image::https://user-images.githubusercontent.com/1049870/61456420-46237d00-a966-11e9-8476-635f1f1eb906.png[]
+
+It must be unsafe, since messing with the raw bytes of a `String` can break the "always valid UTF-8" invariant. But the effects have been carefully checked. It's efficient. It's bulletproof.
+
+It is also completely unnecessary.
+
+The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. 
+
+
+
+
+
+
+
+
+

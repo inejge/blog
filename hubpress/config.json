@@ -2,14 +2,56 @@
   "meta": {
     "username": "inejge",
     "repositoryName": "blog",
-    "branch": "gh-pages"
+    "branch": "gh-pages",
+    "cname": ""
   },
   "site": {
-    "title": "No More Than Five Minutes",
-    "description": ""
+    "title": "No More Than Ten Minutes",
+    "description": "",
+    "logo": "",
+    "cover": "",
+    "delay": "",
+    "postsPerPage": "",
+    "blogPath": "",
+    "googleAnalytics": "",
+    "disqus": ""
   },
-  "socialnetwork": {},
+  "socialnetwork": {
+    "email": "",
+    "github": "",
+    "twitter": "",
+    "facebook": "",
+    "googleplus": "",
+    "instagram": "",
+    "pinterest": "",
+    "flickr": "",
+    "linkedin": "",
+    "stackoverflow": "",
+    "paypalme": "",
+    "opencollective": ""
+  },
   "theme": {
     "name": "roon"
-  }
+  },
+  "urls": {
+    "site": "https://inejge.github.io/blog",
+    "hubpress": "https://inejge.github.io/blog",
+    "theme": "//inejge.github.io/blog/themes/roon",
+    "images": "https://inejge.github.io/blog/images"
+  },
+  "initialisationConfigComponent": {
+    "name": "initialise-configuration",
+    "computed": {},
+    "methods": {},
+    "staticRenderFns": [
+      null,
+      null,
+      null
+    ],
+    "_compiled": true,
+    "beforeCreate": [
+      null
+    ]
+  },
+  "navigation": []
 }

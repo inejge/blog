@@ -43,7 +43,9 @@ It is also completely unnecessary. The most likely use of this code will have an
 
 image::https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png[]
 
-Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). But I would like to turn attention to the wider picture. As mentioned upfront, any discussion of unsafe stirs up passions. To me, that is a sign of vagueness of understanding the full implications of its use, and immaturity of the tooling which could help gain that understanding. 
+Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). But I would like to turn attention to the wider picture. As mentioned upfront, any discussion of unsafe stirs up passions. To me, that is a sign of vagueness of understanding the full implications of its use, and immaturity of the tooling which could help gain that understanding.
+
+I don't think that the answer should be to choose the strictly pro- or anti-unsafe camp, and accuse the other side of various character failings (which, depressingly, happens). While understanding and tooling slowly improve, 
 
 * Thou shalt not commit UB.
 * 

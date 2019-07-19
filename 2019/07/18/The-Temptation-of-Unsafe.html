@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>The Temptation of Unsafe</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://inejge.github.io/blog/favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:400,700,400italic,700italic|Open+Sans:400italic,700italic,700,400">
+    <link rel="stylesheet" type="text/css" href="//inejge.github.io/blog/themes/roon/assets/css/screen.css?v=1563536840406" />
+
+    <link rel="canonical" href="https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html" />
+    <meta name="referrer" content="origin" />
+    
+    <meta property="og:site_name" content="No More Than Ten Minutes" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="The Temptation of Unsafe" />
+    <meta property="og:description" content="Recently, another round of discussion concerning the use of Rust&amp;#8217;s unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don&amp;" />
+    <meta property="og:url" content="https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html" />
+    <meta property="article:published_time" content="2019-07-18T00:00:00.000Z" />
+    <meta property="article:tag" content="Rust" />
+    <meta property="article:tag" content="unsafe" />
+    
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="The Temptation of Unsafe" />
+    <meta name="twitter:description" content="Recently, another round of discussion concerning the use of Rust&amp;#8217;s unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don&amp;" />
+    <meta name="twitter:url" content="https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "No More Than Ten Minutes",
+    "author": {
+        "@type": "Person",
+        "name": "inejge",
+        "image": "https://avatars3.githubusercontent.com/u/1049870?v=4",
+        "url": "https://inejge.github.io/blog/author/inejge/"
+    },
+    "headline": "The Temptation of Unsafe",
+    "url": "https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html",
+    "datePublished": "2019-07-18T00:00:00.000Z",
+    "keywords": "Rust, unsafe",
+    "description": "Recently, another round of discussion concerning the use of Rust&amp;#8217;s unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don&amp;"
+}
+    </script>
+
+    <meta name="generator" content="HubPress" />
+    <link rel="alternate" type="application/rss+xml" title="No More Than Ten Minutes" href="https://inejge.github.io/blog/rss/" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/prism/1.14.0/themes/prism-okaidia.min.css">
+    
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+</head>
+<body class="post-template tag-Rust tag-unsafe  noimage">
+
+    
+
+
+    <article role="main" class="">
+        <header>
+            <a href="https://inejge.github.io/blog" id="home_link">«</a>
+            <div class="meta"><time datetime="2019-07-18"><a href="https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html">July 18, 2019</a></time> <span class="count" id="js-reading-time"></span></div>
+            <h1>The Temptation of Unsafe</h1>
+        </header>
+
+        <div class="text" id="js-post-content">
+            <div class="paragraph">
+<p>Recently, another round of discussion concerning the use of Rust&#8217;s unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don&#8217;t need any more exposure. Use your favorite search engine.) This proves, if more proof is needed, that people hold passionate beliefs about the matter.</p>
+</div>
+<div class="paragraph">
+<p>This post is not about Actix as such. It&#8217;s about unsafe, and its allure as a tool for unlocking good performance. It also attempts to propose some guidelines for reasoning about its use (a tall order, I know). But first, a refresher on the concept, which is also a check on my understanding. If it&#8217;s familiar to you, skip the following several paragraphs.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s first mention unsafe&#8217;s treacherous sometime companion, undefined behavior (UB), which amounts to a breakdown of the contract with the language, giving the compiler a license to do a lot of strange things with your code. There is a set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.</p>
+</div>
+<div class="paragraph">
+<p>UB is <em>never</em> OK. Having it anywhere means that the program is essentially unpredictable. It may work today, with the specific combination of your CPU, OS, compiler version, library versions, and set of inputs. Change any of those and it may stop working. Tomorrow. Next week. Six months hence. Perhaps never&#8212;&#8203;but you don&#8217;t know that. "Stop working" includes crashing, corrupting data, or letting an attacker exfiltrate your whole user database. You don&#8217;t know that either.</p>
+</div>
+<div class="paragraph">
+<p>People occasionally confuse or conflate UB with unsafe. The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust&#8217;s expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.</p>
+</div>
+<div class="paragraph">
+<p>In the source code, unsafe can appear in three ways.</p>
+</div>
+<div class="paragraph">
+<p>An unsafe block means "I (the author of the block) vouch for the semantics of the code inside the block". "Semantics" are the union of avoiding UB and upholding the program&#8217;s and Rust&#8217;s invariants. This is trickier than it seems: the scope of unsafety is not limited to the block in which unsafe operations appear, but stretches at least to the enclosing module boundary.</p>
+</div>
+<div class="paragraph">
+<p>An unsafe function means "You (the caller of the function) must guarantee the semantics of the code calling the function".</p>
+</div>
+<div class="paragraph">
+<p>An unsafe trait implementation means "I (the implementor of the trait) guarantee that the trait&#8217;s semantics are followed in the code".</p>
+</div>
+<div class="paragraph">
+<p>One goal of safe Rust is to make UB impermissible. An unsafe block which contains UB and/or makes it possible to introduce UB in safe code is about the worst imaginable violation of Rust&#8217;s safety guarantees, because the potential for unsoundness is hidden behind a safe façade. An unsafe function or trait implementation with UB are not any better, but at least the "unsafe" keyword prompts the user to be vigilant.</p>
+</div>
+<div class="paragraph">
+<p>A sub-category of "expressive power unsafe" is code where safety is sidestepped to achieve better performance. This is legitimate <em>if supported by evidence</em> of meaningful performance improvement. Since benchmarking is difficult and not everyone&#8217;s criteria for adequate performance are in alignment, this is the most contentious use of unsafe. Rust is attractive to programmers who reflexively seek to eliminate perceived inefficiencies, and the temptation of unsafe always beckons.</p>
+</div>
+<div class="paragraph">
+<p>As a lifelong C programmer, I&#8217;ll admit to succumbing now and then.</p>
+</div>
+<div class="paragraph">
+<p>I have a demonstration, too. A crate of mine, <code>env_proxy</code>, extracts the proxy server parameters from the environment variables, and is used in <code>rustup</code>, exposing it to all kinds of unconventional setups and unearthing an occasional edge case or bug. A <a href="https://github.com/inejge/env_proxy/issues/6">recent issue</a> arose as a result of having an HTTP proxy on port 80: since that&#8217;s the default HTTP port, the URL parser would remove it when explicitly specified, setting it to <code>None</code> in the <code>Url</code> struct, but <code>env_proxy</code> would treat its absence as a sign of not having been specified at all, and set the port to <em>its</em> default, 8080. Effectively, setting <code><a href="http://proxy.example.com:80" class="bare">http://proxy.example.com:80</a></code> would give you back <code><a href="http://proxy.example.com:8080" class="bare">http://proxy.example.com:8080</a></code>.</p>
+</div>
+<div class="paragraph">
+<p>The proper way to fix this is to tell the URL parser to use a different default port, not currently possible in <code>url</code>. As a workaround, I chose to replace the <code>http</code> or <code>https</code> scheme with the bogus <code>xttp</code>/<code>xttps</code>, which doesn&#8217;t have a default port, so anything specified is retained by the parser.</p>
+</div>
+<div class="paragraph">
+<p>Now, look at it as a C programmer. You probably have the URL in a string (<code>char *</code>), call it <code>s</code>. Changing the scheme is just changing the first character of the string.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://user-images.githubusercontent.com/1049870/61454768-1a9e9380-a962-11e9-881c-cadecc851c72.png" alt="61454768 1a9e9380 a962 11e9 881c cadecc851c72">
+</div>
+</div>
+<div class="paragraph">
+<p>What about Rust? If the URL is in a <code>String</code> (also named <code>s</code>), you can&#8217;t change it easily in the same way. A <code>String</code> can&#8217;t be indexed, for good reasons. Rebuilding the string requires an unnecessary allocation. So inefficient! Then there&#8217;s the <a href="https://github.com/inejge/env_proxy/commit/33399e1ba23f4f27c2b5aa46c3222f995cb70a46">unsafe way</a>&#8230;&#8203;</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://user-images.githubusercontent.com/1049870/61456420-46237d00-a966-11e9-8476-635f1f1eb906.png" alt="61456420 46237d00 a966 11e9 8476 635f1f1eb906">
+</div>
+</div>
+<div class="paragraph">
+<p>It must be unsafe, since messing with the raw bytes of a <code>String</code> can break the "always valid UTF-8" invariant. But the effects have been carefully checked. It&#8217;s efficient. It&#8217;s bulletproof.</p>
+</div>
+<div class="paragraph">
+<p>It is also completely unnecessary. The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a mild remonstrance by the <code>rustup</code> maintainer, and thinking about the tradeoffs more thoroughly, I replaced the unsafe block with a brief but allocating call.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png" alt="61486325 7b01f500 a9a3 11e9 89c3 2bd5a5b89fdb">
+</div>
+</div>
+<div class="paragraph">
+<p>Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). But I would like to turn attention to the wider picture. As mentioned upfront, any discussion of unsafe stirs up passions. To me, that is a sign of vagueness of understanding the full implications of its use, and immaturity of the tooling which could help gain that understanding.</p>
+</div>
+<div class="paragraph">
+<p>I don&#8217;t think that the answer should be to choose the strictly pro- or anti-unsafe camp, and accuse the other side of various character failings (which, depressingly, happens). While understanding and tooling slowly improve, having a solid set of guidelines reflecting the current situation should help assess each use of unsafe without having to resort to gut feeling too much. Let&#8217;s try to sketch some rules, from most to least strict.</p>
+</div>
+<div class="paragraph">
+<p><strong>Thou shalt not commit UB.</strong> For the third time. Just don&#8217;t.</p>
+</div>
+<div class="paragraph">
+<p><strong>Unsafe is not easy.</strong> It gives you the tools to potentially introduce UB. The rules are not fully specified, and are sometimes quite subtle. Acknowledge and respect the complexity of the area.</p>
+</div>
+<div class="paragraph">
+<p><strong>Remember that the scope of unsafety is larger than the unsafe block.</strong> You may be depending on state which is mutable by safe code within the whole module.</p>
+</div>
+<div class="paragraph">
+<p><strong>Don&#8217;t be less vigilant when you <em>must</em> use unsafe.</strong> You can&#8217;t avoid unsafe for FFI, and no one will berate you for using it there. Which doesn&#8217;t absolve you from the responsibility of adapting the semantics of the external library to the rest of the Rust code.</p>
+</div>
+<div class="paragraph">
+<p><strong>If using unsafe as an optimization, treat it as such.</strong> In addition to everything else, try not to use it before measuring. (Guilty!)</p>
+</div>
+<div class="paragraph">
+<p><strong>Document your assumptions thoroughly.</strong> It will have to be a comment, and we all know that the coupling between code and comments tends to rot. That&#8217;s another case where using unsafe requires more attention.</p>
+</div>
+<div class="paragraph">
+<p><strong>Be conservative when using unsafe</strong>. It&#8217;s never easy and requires more attention from everyone. Don&#8217;t burden yourself and others unthinkingly.</p>
+</div>
+<div class="paragraph">
+<p><strong>Try not be dogmatic when someone else does.</strong> Give them the benefit of doubt. Don&#8217;t condone or tolerate UB&#8212;&#8203;but you can still be diplomatic about it.</p>
+</div>
+        </div>
+
+        <menu>
+            <a href="" id="btn_share" class="btn" title="Share">
+                <span aria-hidden="true" data-icon="S"></span>
+                <strong>Share</strong>
+            </a>
+            <a href="http://twitter.com/share?text=The%20Temptation%20of%20Unsafe&url=https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;" id="btn_comment" class="btn" target="_blank">
+                <span aria-hidden="true" data-icon="C"></span> Comment on Twitter
+            </a>
+        </menu>
+
+
+        <footer class="post-footer" role="contentinfo">
+
+            <div class="vcard">
+                <a href="https://inejge.github.io/blog/rss" id="btn_feed" class="btn" title="Feed" target="_blank">
+                    <span aria-hidden="true" data-icon=")"></span>
+                    <strong>Feed</strong>
+                </a>
+
+                <a href="https://inejge.github.io/blog/author/inejge/" class="photo">
+                    <span style="background-image: url('https://avatars3.githubusercontent.com/u/1049870?v&#x3D;4');">
+                        <img src="https://avatars3.githubusercontent.com/u/1049870?v&#x3D;4" alt="inejge">
+                    </span>
+                </a>
+
+                <div class="details">
+                    <h4><a href="https://inejge.github.io/blog/author/inejge/" class="url n">inejge</a></h4>
+                    
+                    
+                </div>
+            </div>
+
+            <div id="user_bio">
+                <div class="inner">
+                    
+                </div>
+            </div>
+
+        </footer>
+
+
+
+
+    </article>
+
+    <div id="share_modal">
+        <div class="wrap">
+            <div class="inner">
+                <header>
+                    Share
+                    <a href="" class="close" title="Close">&times;</a>
+                </header>
+
+                <div class="roon-share-links">
+                    <a href="https://twitter.com/share" class="twitter-share-button" data-dnt="true">Tweet</a>
+                    <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+
+                    <div id="fb-elems">
+                        <div id="fb-root"></div>
+                        <script>(function(d, s, id) {
+                        var js, fjs = d.getElementsByTagName(s)[0];
+                        if (d.getElementById(id)) return;
+                        js = d.createElement(s); js.id = id;
+                        js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=463438580397968";
+                        fjs.parentNode.insertBefore(js, fjs);
+                        }(document, 'script', 'facebook-jssdk'));</script>
+                        <div class="fb-like" data-send="false" data-layout="button_count" data-width="110" data-show-faces="false" data-font="arial"></div>
+                    </div>
+
+                    <div id="pinit-btn">
+                        <a href="//pinterest.com/pin/create/button/?url=https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html&amp;description=The%20Temptation%20of%20Unsafe-No%20More%20Than%20Ten%20Minutes " data-pin-do="buttonPin" data-pin-config="beside"><img src="//assets.pinterest.com/images/pidgets/pin_it_button.png"></a>
+                        <script type="text/javascript" src="//assets.pinterest.com/js/pinit.js"></script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+    <script>
+
+            function get_text(el) {
+                ret = "";
+                var length = el.childNodes.length;
+                for(var i = 0; i < length; i++) {
+                    var node = el.childNodes[i];
+                    if(node.nodeType != 8) {
+                        ret += node.nodeType != 1 ? node.nodeValue : get_text(node);
+                    }
+                }
+                return ret;
+            }
+            function reading_time () {
+                var post_content = document.getElementById('js-post-content');
+                if (post_content) {
+                    var words = get_text(post_content),
+                        count = words.split(/\s+/).length,
+                        read_time = Math.ceil((count / 150)),
+                        read_time_node = document.createTextNode(read_time + ' min read');
+                    document.getElementById('js-reading-time').appendChild(read_time_node);
+                }
+            }
+
+        function no_schema_links () {
+            var links = document.querySelectorAll('.js-remove-domain-schema');
+            if (links) {
+                for (i = 0; i < links.length; ++i) {
+                    var link = links[i],
+                        text = link.innerHTML,
+                        no_schema = text.replace(/.*?:\/\//g, "");
+                    link.innerHTML = no_schema;
+                }
+            }
+        }
+
+        window.onload = function () {
+            no_schema_links();
+
+            reading_time();
+        }
+    </script>
+
+
+    <script
+        src="https://code.jquery.com/jquery-3.2.1.min.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous">
+    </script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/prism/1.14.0/prism.min.js?v="></script> 
+      <script type="text/javascript">
+        jQuery( document ).ready(function() {
+          // change date with ago
+          jQuery('ago.ago').each(function(){
+            var element = jQuery(this).parent();
+            element.html( moment(element.text()).fromNow());
+          });
+        });
+
+        // hljs.initHighlightingOnLoad();
+      </script>
+
+        <script>
+            $(function(){
+                var share_modal = $("#share_modal"),
+                    update_social_links = true;
+
+                $("#btn_share").click(function(){
+                    var that = $(this);
+                    share_modal.fadeIn(200);
+                    return false;
+                });
+
+                share_modal.click(function(e){
+                    if (e.target.className == "wrap" || e.target.id == "share_modal") {
+                        share_modal.fadeOut(200);
+                    }
+                    return false;
+                });
+
+                share_modal.find("div.inner > header > a.close").click(function(){
+                    share_modal.fadeOut(200);
+                    return false;
+                });
+            });
+        </script>
+
+
+
+</body>
+</html>

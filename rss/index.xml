@@ -1,1 +1,99 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[No More Than Ten Minutes]]></title><description><![CDATA[No More Than Ten Minutes]]></description><link>https://inejge.github.io/blog</link><generator>RSS for Node</generator><lastBuildDate>Thu, 18 Jul 2019 10:55:49 GMT</lastBuildDate><atom:link href="https://inejge.github.io/blog/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl></channel></rss>
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[No More Than Ten Minutes]]></title><description><![CDATA[No More Than Ten Minutes]]></description><link>https://inejge.github.io/blog</link><generator>RSS for Node</generator><lastBuildDate>Fri, 19 Jul 2019 11:47:20 GMT</lastBuildDate><atom:link href="https://inejge.github.io/blog/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[The Temptation of Unsafe]]></title><description><![CDATA[<div class="paragraph">
+<p>Recently, another round of discussion concerning the use of Rust&#8217;s unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don&#8217;t need any more exposure. Use your favorite search engine.) This proves, if more proof is needed, that people hold passionate beliefs about the matter.</p>
+</div>
+<div class="paragraph">
+<p>This post is not about Actix as such. It&#8217;s about unsafe, and its allure as a tool for unlocking good performance. It also attempts to propose some guidelines for reasoning about its use (a tall order, I know). But first, a refresher on the concept, which is also a check on my understanding. If it&#8217;s familiar to you, skip the following several paragraphs.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s first mention unsafe&#8217;s treacherous sometime companion, undefined behavior (UB), which amounts to a breakdown of the contract with the language, giving the compiler a license to do a lot of strange things with your code. There is a set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.</p>
+</div>
+<div class="paragraph">
+<p>UB is <em>never</em> OK. Having it anywhere means that the program is essentially unpredictable. It may work today, with the specific combination of your CPU, OS, compiler version, library versions, and set of inputs. Change any of those and it may stop working. Tomorrow. Next week. Six months hence. Perhaps never&#8212;&#8203;but you don&#8217;t know that. "Stop working" includes crashing, corrupting data, or letting an attacker exfiltrate your whole user database. You don&#8217;t know that either.</p>
+</div>
+<div class="paragraph">
+<p>People occasionally confuse or conflate UB with unsafe. The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust&#8217;s expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.</p>
+</div>
+<div class="paragraph">
+<p>In the source code, unsafe can appear in three ways.</p>
+</div>
+<div class="paragraph">
+<p>An unsafe block means "I (the author of the block) vouch for the semantics of the code inside the block". "Semantics" are the union of avoiding UB and upholding the program&#8217;s and Rust&#8217;s invariants. This is trickier than it seems: the scope of unsafety is not limited to the block in which unsafe operations appear, but stretches at least to the enclosing module boundary.</p>
+</div>
+<div class="paragraph">
+<p>An unsafe function means "You (the caller of the function) must guarantee the semantics of the code calling the function".</p>
+</div>
+<div class="paragraph">
+<p>An unsafe trait implementation means "I (the implementor of the trait) guarantee that the trait&#8217;s semantics are followed in the code".</p>
+</div>
+<div class="paragraph">
+<p>One goal of safe Rust is to make UB impermissible. An unsafe block which contains UB and/or makes it possible to introduce UB in safe code is about the worst imaginable violation of Rust&#8217;s safety guarantees, because the potential for unsoundness is hidden behind a safe façade. An unsafe function or trait implementation with UB are not any better, but at least the "unsafe" keyword prompts the user to be vigilant.</p>
+</div>
+<div class="paragraph">
+<p>A sub-category of "expressive power unsafe" is code where safety is sidestepped to achieve better performance. This is legitimate <em>if supported by evidence</em> of meaningful performance improvement. Since benchmarking is difficult and not everyone&#8217;s criteria for adequate performance are in alignment, this is the most contentious use of unsafe. Rust is attractive to programmers who reflexively seek to eliminate perceived inefficiencies, and the temptation of unsafe always beckons.</p>
+</div>
+<div class="paragraph">
+<p>As a lifelong C programmer, I&#8217;ll admit to succumbing now and then.</p>
+</div>
+<div class="paragraph">
+<p>I have a demonstration, too. A crate of mine, <code>env_proxy</code>, extracts the proxy server parameters from the environment variables, and is used in <code>rustup</code>, exposing it to all kinds of unconventional setups and unearthing an occasional edge case or bug. A <a href="https://github.com/inejge/env_proxy/issues/6">recent issue</a> arose as a result of having an HTTP proxy on port 80: since that&#8217;s the default HTTP port, the URL parser would remove it when explicitly specified, setting it to <code>None</code> in the <code>Url</code> struct, but <code>env_proxy</code> would treat its absence as a sign of not having been specified at all, and set the port to <em>its</em> default, 8080. Effectively, setting <code><a href="http://proxy.example.com:80" class="bare">http://proxy.example.com:80</a></code> would give you back <code><a href="http://proxy.example.com:8080" class="bare">http://proxy.example.com:8080</a></code>.</p>
+</div>
+<div class="paragraph">
+<p>The proper way to fix this is to tell the URL parser to use a different default port, not currently possible in <code>url</code>. As a workaround, I chose to replace the <code>http</code> or <code>https</code> scheme with the bogus <code>xttp</code>/<code>xttps</code>, which doesn&#8217;t have a default port, so anything specified is retained by the parser.</p>
+</div>
+<div class="paragraph">
+<p>Now, look at it as a C programmer. You probably have the URL in a string (<code>char *</code>), call it <code>s</code>. Changing the scheme is just changing the first character of the string.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://user-images.githubusercontent.com/1049870/61454768-1a9e9380-a962-11e9-881c-cadecc851c72.png" alt="61454768 1a9e9380 a962 11e9 881c cadecc851c72">
+</div>
+</div>
+<div class="paragraph">
+<p>What about Rust? If the URL is in a <code>String</code> (also named <code>s</code>), you can&#8217;t change it easily in the same way. A <code>String</code> can&#8217;t be indexed, for good reasons. Rebuilding the string requires an unnecessary allocation. So inefficient! Then there&#8217;s the <a href="https://github.com/inejge/env_proxy/commit/33399e1ba23f4f27c2b5aa46c3222f995cb70a46">unsafe way</a>&#8230;&#8203;</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://user-images.githubusercontent.com/1049870/61456420-46237d00-a966-11e9-8476-635f1f1eb906.png" alt="61456420 46237d00 a966 11e9 8476 635f1f1eb906">
+</div>
+</div>
+<div class="paragraph">
+<p>It must be unsafe, since messing with the raw bytes of a <code>String</code> can break the "always valid UTF-8" invariant. But the effects have been carefully checked. It&#8217;s efficient. It&#8217;s bulletproof.</p>
+</div>
+<div class="paragraph">
+<p>It is also completely unnecessary. The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a mild remonstrance by the <code>rustup</code> maintainer, and thinking about the tradeoffs more thoroughly, I replaced the unsafe block with a brief but allocating call.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png" alt="61486325 7b01f500 a9a3 11e9 89c3 2bd5a5b89fdb">
+</div>
+</div>
+<div class="paragraph">
+<p>Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). But I would like to turn attention to the wider picture. As mentioned upfront, any discussion of unsafe stirs up passions. To me, that is a sign of vagueness of understanding the full implications of its use, and immaturity of the tooling which could help gain that understanding.</p>
+</div>
+<div class="paragraph">
+<p>I don&#8217;t think that the answer should be to choose the strictly pro- or anti-unsafe camp, and accuse the other side of various character failings (which, depressingly, happens). While understanding and tooling slowly improve, having a solid set of guidelines reflecting the current situation should help assess each use of unsafe without having to resort to gut feeling too much. Let&#8217;s try to sketch some rules, from most to least strict.</p>
+</div>
+<div class="paragraph">
+<p><strong>Thou shalt not commit UB.</strong> For the third time. Just don&#8217;t.</p>
+</div>
+<div class="paragraph">
+<p><strong>Unsafe is not easy.</strong> It gives you the tools to potentially introduce UB. The rules are not fully specified, and are sometimes quite subtle. Acknowledge and respect the complexity of the area.</p>
+</div>
+<div class="paragraph">
+<p><strong>Remember that the scope of unsafety is larger than the unsafe block.</strong> You may be depending on state which is mutable by safe code within the whole module.</p>
+</div>
+<div class="paragraph">
+<p><strong>Don&#8217;t be less vigilant when you <em>must</em> use unsafe.</strong> You can&#8217;t avoid unsafe for FFI, and no one will berate you for using it there. Which doesn&#8217;t absolve you from the responsibility of adapting the semantics of the external library to the rest of the Rust code.</p>
+</div>
+<div class="paragraph">
+<p><strong>If using unsafe as an optimization, treat it as such.</strong> In addition to everything else, try not to use it before measuring. (Guilty!)</p>
+</div>
+<div class="paragraph">
+<p><strong>Document your assumptions thoroughly.</strong> It will have to be a comment, and we all know that the coupling between code and comments tends to rot. That&#8217;s another case where using unsafe requires more attention.</p>
+</div>
+<div class="paragraph">
+<p><strong>Be conservative when using unsafe</strong>. It&#8217;s never easy and requires more attention from everyone. Don&#8217;t burden yourself and others unthinkingly.</p>
+</div>
+<div class="paragraph">
+<p><strong>Try not be dogmatic when someone else does.</strong> Give them the benefit of doubt. Don&#8217;t condone or tolerate UB&#8212;&#8203;but you can still be diplomatic about it.</p>
+</div>]]></description><link>https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html</link><guid isPermaLink="true">https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html</guid><category><![CDATA[Rust]]></category><category><![CDATA[unsafe]]></category><pubDate>Thu, 18 Jul 2019 00:00:00 GMT</pubDate></item></channel></rss>

@@ -47,8 +47,14 @@ Case closed and disaster averted? In this instance, yes (although no disaster wa
 
 I don't think that the answer should be to choose the strictly pro- or anti-unsafe camp, and accuse the other side of various character failings (which, depressingly, happens). While understanding and tooling slowly improve, having a solid set of guidelines reflecting the current situation should help assess each use of unsafe without having to resort to gut feeling too much. Let's try to sketch some rules, from most to least strict.
 
-*Thou shalt not commit UB.*
+*Thou shalt not commit UB.* For the third time. Just don't.
+
+*Unsafe is not easy.* It gives you the tools to potentially introduce UB. The rules are not fully specified, and are sometimes quite subtle. Acknowledge and respect the complexity of the area.
+
+*Remember that the scope of unsafety is larger than the unsafe block.* You may be depending on state which is mutable by safe code within the whole module.
  
+*Don't be less vigilant when you _must_ use unsafe.* You can't avoid unsafe for FFI, and no one will berate you for using it there. Which doesn't absolve you from the responsibility of adapting the semantics of the external library to the rest of the Rust code.
+
 * Be conservative when using unsafe, but don't be dogmatic when someone else does.
 
 

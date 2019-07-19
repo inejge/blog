@@ -59,12 +59,6 @@ I don't think that the answer should be to choose the strictly pro- or anti-unsa
 
 *Document your assumptions thoroughly.* It will have to be a comment, and we all know that the coupling between code and comments tends to rot. That's another case where using unsafe requires more attention.
 
-* Be conservative when using unsafe, but don't be dogmatic when someone else does.
+*Be conservative when using unsafe*. It's never easy and requires more attention from everyone. Don't burden yourself and others unthinkingly.
 
-
-
-
-
-
-
-
+*Try not be dogmatic when someone else does.* Give them the benefit of doubt. Don't condone or tolerate UB--but you can still be diplomatic about it.

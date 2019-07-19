@@ -43,6 +43,7 @@ It is also completely unnecessary. The most likely use of this code will have an
 
 image::https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png[]
 
+Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). 
 
 
 

@@ -5,7 +5,7 @@ Recently, another round of discussion concerning the use of Rust's unsafe featur
 
 This post is not about Actix as such. It's about unsafe, and its allure as a tool for unlocking good performance. It also attempts to propose some guidelines for reasoning about its use (a tall order, I know). But first, a refresher on the concept, which is also a check on my understanding. If it's familiar to you, skip the following couple of paragraphs.
 
-Let's first mention unsafe's treacherous sometime companion, undefined behavior (UB), which amounts to a breakdown of the contract with the language, giving the compiler a license to do anything at all with your code. There is a set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.
+Let's first mention unsafe's treacherous sometime companion, undefined behavior (UB), which amounts to a breakdown of the contract with the language, giving the compiler a license to do a lot of strange things with your code. There is a set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.
 
 UB is _never_ OK. Having it anywhere means that the program is essentially unpredictable. It may work today, with the specific combination of your CPU, OS, compiler version, library versions, and set of inputs. Change any of those and it may stop working. Tomorrow. Next week. Six months hence. Perhaps never--but you don't know that. "Stop working" includes crashing, corrupting data, or letting an attacker exfiltrate your whole user database. You don't know that either.
 
@@ -43,7 +43,11 @@ It is also completely unnecessary. The most likely use of this code will have an
 
 image::https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png[]
 
-Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). 
+Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). But I would like to turn attention to the wider picture. As mentioned upfront, any discussion of unsafe stirs up passions. To me, that is a sign of vagueness of understanding the full implications of its use, and immaturity of the tooling which could help gain that understanding. 
+
+* Thou shalt not commit UB.
+* 
+* Be conservative when using unsafe, but don't be dogmatic when someone else does.
 
 
 

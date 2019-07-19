@@ -5,9 +5,9 @@ Recently, another round of discussion concerning the use of Rust's unsafe featur
 
 This post is not about Actix as such. It's about unsafe, and its allure as a tool for unlocking good performance. It also attempts to propose some guidelines for reasoning about its use (a tall order, I know). But first, a refresher on the concept, which is also a check on my understanding. If it's familiar to you, skip the following couple of paragraphs.
 
-Let's first mention unsafe's treacherous sometime companion, undefined behavior (UB), which is essentially a breakdown of the contract with the language, giving the compiler a license to do anything at all with your code. UB is the set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.
+Let's first mention unsafe's treacherous sometime companion, undefined behavior (UB), which amounts to a breakdown of the contract with the language, giving the compiler a license to do anything at all with your code. There is a set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.
 
-UB is _never_ OK. Having it anywhere means that the program is essentially unpredictable. (Yes, it may work today, with the specific combination of your CPU, OS, compiler version, library versions, and set of inputs. Change any of those and it may stop working. Tomorrow. Next week. Six months hence. Perhaps never--but you don't know that. "Stop working" includes crashing, corrupting data, or letting an attacker exfiltrate your whole user database. You don't know that either.)
+UB is _never_ OK. Having it anywhere means that the program is essentially unpredictable. It may work today, with the specific combination of your CPU, OS, compiler version, library versions, and set of inputs. Change any of those and it may stop working. Tomorrow. Next week. Six months hence. Perhaps never--but you don't know that. "Stop working" includes crashing, corrupting data, or letting an attacker exfiltrate your whole user database. You don't know that either.
 
 People occasionally confuse or conflate UB with unsafe. The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust's expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.
 
@@ -21,7 +21,7 @@ An unsafe trait implementation means "I (the implementor of the trait) guarantee
 
 One goal of safe Rust is to make UB impermissible. An unsafe block which contains UB and/or makes it possible to introduce UB in safe code is about the worst imaginable violation of Rust's safety guarantees, because the potential for unsoundness is hidden behind a safe façade. An unsafe function or trait implementation with UB are not any better, but at least the "unsafe" keyword prompts the user to be vigilant.
 
-A sub-category of "expressive power unsafe" is code where safety is sidestepped to achieve better performance. This is legitimate _if supported by evidence_ of meaningful performance improvement. Since benchmarking is difficult and not everyone's criteria for adequate performance are in alignment, this is the most contentious use of unsafe. Rust is attractive to programmers who reflexively seek to eliminate percieved inefficiencies, and the temptation of unsafe always beckons.
+A sub-category of "expressive power unsafe" is code where safety is sidestepped to achieve better performance. This is legitimate _if supported by evidence_ of meaningful performance improvement. Since benchmarking is difficult and not everyone's criteria for adequate performance are in alignment, this is the most contentious use of unsafe. Rust is attractive to programmers who reflexively seek to eliminate perceived inefficiencies, and the temptation of unsafe always beckons.
 
 As a lifelong C programmer, I'll admit to succumbing now and then.
 
@@ -39,9 +39,9 @@ image::https://user-images.githubusercontent.com/1049870/61456420-46237d00-a966-
 
 It must be unsafe, since messing with the raw bytes of a `String` can break the "always valid UTF-8" invariant. But the effects have been carefully checked. It's efficient. It's bulletproof.
 
-It is also completely unnecessary.
+It is also completely unnecessary. The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a mild remonstrance by the `rustup` maintainer, and thinking about the tradeoffs more thoroughly, I replaced the unsafe block with a brief but allocating call.
 
-The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a gentle remonstrance by the `rustup` maintainer, and thinking about the tradeoffs more thoroughly, 
+image::https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png[]
 
 
 

@@ -55,7 +55,7 @@ I don't think that the answer should be to choose the strictly pro- or anti-unsa
  
 *Don't be less vigilant when you _must_ use unsafe.* You can't avoid unsafe for FFI, and no one will berate you for using it there. Which doesn't absolve you from the responsibility of adapting the semantics of the external library to the rest of the Rust code.
 
-*If using unsafe as an optimization, treat it as such.* In addition to everything else, try not to use it before measuring.
+*If using unsafe as an optimization, treat it as such.* In addition to everything else, try not to use it before measuring. (Guilty!)
 
 *Document your assumptions thoroughly.* It will have to be a comment, and we all know that the coupling between code and comments tends to rot. That's another case where using unsafe requires more attention.
 

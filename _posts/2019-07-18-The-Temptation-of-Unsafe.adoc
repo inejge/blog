@@ -45,10 +45,10 @@ image::https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-
 
 Case closed and disaster averted? In this instance, yes (although no disaster was in the cards). But I would like to turn attention to the wider picture. As mentioned upfront, any discussion of unsafe stirs up passions. To me, that is a sign of vagueness of understanding the full implications of its use, and immaturity of the tooling which could help gain that understanding.
 
-I don't think that the answer should be to choose the strictly pro- or anti-unsafe camp, and accuse the other side of various character failings (which, depressingly, happens). While understanding and tooling slowly improve, 
+I don't think that the answer should be to choose the strictly pro- or anti-unsafe camp, and accuse the other side of various character failings (which, depressingly, happens). While understanding and tooling slowly improve, having a solid set of guidelines reflecting the current situation should help assess each use of unsafe without having to resort to gut feeling too much. Let's try to sketch some rules, from most to least strict.
 
-* Thou shalt not commit UB.
-* 
+*Thou shalt not commit UB.*
+ 
 * Be conservative when using unsafe, but don't be dogmatic when someone else does.
 
 

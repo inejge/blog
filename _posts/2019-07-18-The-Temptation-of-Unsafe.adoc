@@ -3,7 +3,7 @@
 
 Recently, another round of discussion concerning the use of Rust's unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don't need any more exposure. Use your favorite search engine.) This proves, if more proof is needed, that people hold passionate beliefs about the matter.
 
-This post is not about Actix as such. It's about unsafe, and its allure as a tool for unlocking good performance. It also attempts to propose some guidelines for reasoning about its use (a tall order, I know). But first, a refresher on the concept, which is also a check on my understanding. If it's familiar to you, skip the following couple of paragraphs.
+This post is not about Actix as such. It's about unsafe, and its allure as a tool for unlocking good performance. It also attempts to propose some guidelines for reasoning about its use (a tall order, I know). But first, a refresher on the concept, which is also a check on my understanding. If it's familiar to you, skip the following several paragraphs.
 
 Let's first mention unsafe's treacherous sometime companion, undefined behavior (UB), which amounts to a breakdown of the contract with the language, giving the compiler a license to do a lot of strange things with your code. There is a set of behaviors which precipitate that breakdown, like instantiating multiple aliased mutable references or reading uninitialized values. Rust is not fully or formally specified, so there is no definitive UB list, but many instances have long been agreed upon.
 

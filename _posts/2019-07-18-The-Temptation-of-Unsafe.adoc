@@ -11,11 +11,13 @@ UB is _never_ OK. Having it anywhere means that the program is essentially unpre
 
 People occasionally confuse or conflate UB with unsafe. The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust's expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.
 
-In the source code, unsafe can appear in three ways.
+In the source code, unsafe can appear in several ways.
 
 An unsafe block means "I (the author of the block) vouch for the semantics of the code inside the block". "Semantics" are the union of avoiding UB and upholding the program's and Rust's invariants. This is trickier than it seems: the scope of unsafety is not limited to the block in which unsafe operations appear, but stretches at least to the enclosing module boundary.
 
 An unsafe function means "You (the caller of the function) must guarantee the semantics of the code calling the function".
+
+An unsafe trait means "this trait requires special consideration when implementing in order to preserve language and/or program semantics".
 
 An unsafe trait implementation means "I (the implementor of the trait) guarantee that the trait's semantics are followed in the code".
 
@@ -39,7 +41,7 @@ image::https://user-images.githubusercontent.com/1049870/61456420-46237d00-a966-
 
 It must be unsafe, since messing with the raw bytes of a `String` can break the "always valid UTF-8" invariant. But the effects have been carefully checked. It's efficient. It's bulletproof.
 
-It is also completely unnecessary. The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a mild remonstrance by the `rustup` maintainer, and thinking about the tradeoffs more thoroughly, I replaced the unsafe block with a brief but allocating call.
+It is also completely unnecessary. The most likely use of this code will have an HTTP(S) connection in the future. Right there, the cost of an extra allocation will be lost in the noise. Venturing into unsafety, however well technically justified, is simply not worth it in this case. After a mild remonstrance by the `rustup` maintainer, and thinking about the tradeoffs more thoroughly, I replaced the unsafe block with a brief but allocating call.   
 
 image::https://user-images.githubusercontent.com/1049870/61486325-7b01f500-a9a3-11e9-89c3-2bd5a5b89fdb.png[]
 
@@ -52,7 +54,7 @@ I don't think that the answer should be to choose the strictly pro- or anti-unsa
 *Unsafe is not easy.* It gives you the tools to potentially introduce UB. The rules are not fully specified, and are sometimes quite subtle. Acknowledge and respect the complexity of the area.
 
 *Remember that the scope of unsafety is larger than the unsafe block.* You may be depending on state which is mutable by safe code within the whole module.
- 
+
 *Don't be less vigilant when you _must_ use unsafe.* You can't avoid unsafe for FFI, and no one will berate you for using it there. Which doesn't absolve you from the responsibility of adapting the semantics of the external library to the rest of the Rust code.
 
 *If using unsafe as an optimization, treat it as such.* In addition to everything else, try not to use it before measuring. (Guilty!)

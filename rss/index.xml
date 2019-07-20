@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[No More Than Ten Minutes]]></title><description><![CDATA[No More Than Ten Minutes]]></description><link>https://inejge.github.io/blog</link><generator>RSS for Node</generator><lastBuildDate>Fri, 19 Jul 2019 11:47:20 GMT</lastBuildDate><atom:link href="https://inejge.github.io/blog/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[The Temptation of Unsafe]]></title><description><![CDATA[<div class="paragraph">
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[No More Than Ten Minutes]]></title><description><![CDATA[No More Than Ten Minutes]]></description><link>https://inejge.github.io/blog</link><generator>RSS for Node</generator><lastBuildDate>Sat, 20 Jul 2019 19:25:45 GMT</lastBuildDate><atom:link href="https://inejge.github.io/blog/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[The Temptation of Unsafe]]></title><description><![CDATA[<div class="paragraph">
 <p>Recently, another round of discussion concerning the use of Rust&#8217;s unsafe features in the Actix web framework happened, or rather erupted, on Reddit, even more heated and acrimonious than the first time around. (I am not linking to any of the threads, as I believe that they don&#8217;t need any more exposure. Use your favorite search engine.) This proves, if more proof is needed, that people hold passionate beliefs about the matter.</p>
 </div>
 <div class="paragraph">
@@ -14,13 +14,16 @@
 <p>People occasionally confuse or conflate UB with unsafe. The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust&#8217;s expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.</p>
 </div>
 <div class="paragraph">
-<p>In the source code, unsafe can appear in three ways.</p>
+<p>In the source code, unsafe can appear in several ways.</p>
 </div>
 <div class="paragraph">
 <p>An unsafe block means "I (the author of the block) vouch for the semantics of the code inside the block". "Semantics" are the union of avoiding UB and upholding the program&#8217;s and Rust&#8217;s invariants. This is trickier than it seems: the scope of unsafety is not limited to the block in which unsafe operations appear, but stretches at least to the enclosing module boundary.</p>
 </div>
 <div class="paragraph">
 <p>An unsafe function means "You (the caller of the function) must guarantee the semantics of the code calling the function".</p>
+</div>
+<div class="paragraph">
+<p>An unsafe trait means "this trait requires special consideration when implementing in order to preserve language and/or program semantics".</p>
 </div>
 <div class="paragraph">
 <p>An unsafe trait implementation means "I (the implementor of the trait) guarantee that the trait&#8217;s semantics are followed in the code".</p>

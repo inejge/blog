@@ -13,7 +13,7 @@
     <link rel="shortcut icon" href="https://inejge.github.io/blog/favicon.ico">
 
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:400,700,400italic,700italic|Open+Sans:400italic,700italic,700,400">
-    <link rel="stylesheet" type="text/css" href="//inejge.github.io/blog/themes/roon/assets/css/screen.css?v=1563536840406" />
+    <link rel="stylesheet" type="text/css" href="//inejge.github.io/blog/themes/roon/assets/css/screen.css?v=1563650745397" />
 
     <link rel="canonical" href="https://inejge.github.io/blog/2019/07/18/The-Temptation-of-Unsafe.html" />
     <meta name="referrer" content="origin" />
@@ -86,13 +86,16 @@
 <p>People occasionally confuse or conflate UB with unsafe. The two are not the same, and neither implies the other. To reiterate, UB is never OK. Unsafe, however, sometimes is. Unsafe marks the limit of safe Rust&#8217;s expressive power or its protection domain. A canonical example of exceeding the former is a data structure with backreferences, and of the latter, a call to an external C library.</p>
 </div>
 <div class="paragraph">
-<p>In the source code, unsafe can appear in three ways.</p>
+<p>In the source code, unsafe can appear in several ways.</p>
 </div>
 <div class="paragraph">
 <p>An unsafe block means "I (the author of the block) vouch for the semantics of the code inside the block". "Semantics" are the union of avoiding UB and upholding the program&#8217;s and Rust&#8217;s invariants. This is trickier than it seems: the scope of unsafety is not limited to the block in which unsafe operations appear, but stretches at least to the enclosing module boundary.</p>
 </div>
 <div class="paragraph">
 <p>An unsafe function means "You (the caller of the function) must guarantee the semantics of the code calling the function".</p>
+</div>
+<div class="paragraph">
+<p>An unsafe trait means "this trait requires special consideration when implementing in order to preserve language and/or program semantics".</p>
 </div>
 <div class="paragraph">
 <p>An unsafe trait implementation means "I (the implementor of the trait) guarantee that the trait&#8217;s semantics are followed in the code".</p>
